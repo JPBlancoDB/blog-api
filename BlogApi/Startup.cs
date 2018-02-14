@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using BlogApi.Entities;
+using BlogApi.Repositories;
+using BlogApi.Repositories.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MySQL.Data.Entity.Extensions;
 
 namespace BlogApi
 {
@@ -24,14 +24,14 @@ namespace BlogApi
 
         public IConfigurationRoot Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // Add framework services.
+            services.AddDbContext<BlogDbContext>(options => options.UseMySQL(Configuration.GetConnectionString("MySql")));
+            services.AddScoped<IRepository<Post>, PostsRepository>();
+            services.AddScoped<IRepository<User>, UsersRepository>();
             services.AddMvc();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
@@ -42,7 +42,11 @@ namespace BlogApi
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseMvc();
+            app.UseMvc(routes =>
+            {
+                routes.MapRoute("GetUserById", "users/{id}");
+                routes.MapRoute("GetPostBySlug", "posts/{slug}");
+            });
         }
     }
 }
